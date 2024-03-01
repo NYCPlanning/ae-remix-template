@@ -8,6 +8,8 @@ import {
   isRouteErrorResponse,
   useRouteError,
 } from "@remix-run/react";
+import { Header } from "./components/header";
+import { Atlas } from "./components/atlas";
 
 function Document({
   children,
@@ -42,7 +44,9 @@ export default function App() {
   return (
     <Document>
       <StreetscapeProvider>
+        <Header />
         <Outlet />
+        <Atlas />
       </StreetscapeProvider>
     </Document>
   );

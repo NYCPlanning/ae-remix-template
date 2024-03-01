@@ -1,12 +1,12 @@
 import { createRemixStub } from "@remix-run/testing";
 import { render, screen, waitFor } from "@testing-library/react";
-import Index from "./route";
+import Document from "./root";
 
-describe("Index", () => {
+describe("Document", () => {
   const RemixStub = createRemixStub([
     {
       path: "/",
-      Component: Index,
+      Component: Document,
     },
   ]);
 
