@@ -21,6 +21,12 @@ function Document({
       <head>
         <Meta />
         <title>{title}</title>
+        {/* Silence /favicon.ico error by pointing to null image. Remove link to null image after creating valid favicon. */}
+        <link
+          rel="shortcut icon"
+          type="image/x-icon"
+          href="data:image/x-icon;base64,"
+        />
         <Links />
       </head>
       <body>
