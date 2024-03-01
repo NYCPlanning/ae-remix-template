@@ -6,8 +6,14 @@ installGlobals();
 
 export default defineConfig({
   plugins: [
-    remix({
-      ignoredRouteFiles: ["**/.*"],
-    }),
+    !process.env.VITEST &&
+      remix({
+        ignoredRouteFiles: ["**/?(*.)+(spec|test).[tj]s?(x)"],
+      }),
   ],
+  test: {
+    globals: true,
+    environment: "jsdom",
+    setupFiles: "./setup-test.ts",
+  },
 });
