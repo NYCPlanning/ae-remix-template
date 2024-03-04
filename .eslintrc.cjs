@@ -68,7 +68,7 @@ module.exports = {
 
     // Node
     {
-      files: [".eslintrc.cjs"],
+      files: [".eslintrc.cjs", "vite.config.js"],
       env: {
         node: true,
       },
