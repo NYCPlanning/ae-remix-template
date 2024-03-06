@@ -82,6 +82,7 @@ export function Atlas() {
     pickable: true,
     getPointColor: () => [100, 80, 255],
     getPointRadius: () => 10,
+    getLineWidth: () => 10,
     getFillColor: ({ properties }: any) => {
       console.log("fill color properties", properties);
       return properties?.dragging ? [120, 180, 180, 30] : [120, 180, 180, 90];
@@ -154,12 +155,12 @@ export function Atlas() {
         if (isHovering) return "pointer";
         return "grab";
       }}
-      onClick={({ coordinate }) => {
-        console.debug("clicked and is adding Feature", isAddingFeature);
+      onClick={({ object, coordinate }) => {
         const nextDrawData = cloneDeep(drawData);
         if (!isAddingFeature) {
           setIsAddingFeature(true);
           if (coordinate) {
+            console.debug("coordinate", coordinate);
             const nextFeature = {
               type: "Feature",
               id: nextDrawData.features.length,
@@ -175,7 +176,18 @@ export function Atlas() {
             setDrawData(nextDrawData);
           }
         } else {
-          setIsAddingFeature(false);
+          if (object !== undefined) setIsAddingFeature(false);
+
+          const feature =
+            nextDrawData.features[nextDrawData.features.length - 1];
+          const nextFeature = cloneDeep(feature);
+          if (coordinate && feature.geometry.type === "LineString") {
+            console.debug("feature", feature);
+            nextFeature.geometry.coordinates.push(coordinate);
+            nextDrawData.features[nextDrawData.features.length - 1] =
+              nextFeature;
+            setDrawData(nextDrawData);
+          }
         }
       }}
       onHover={({ coordinate }) => {
@@ -190,14 +202,12 @@ export function Atlas() {
               coordinates: [feature.geometry.coordinates, coordinate],
             };
             nextFeature.geometry = nextGeometry;
-            console.debug("feature", feature);
-            console.debug("next feature", nextFeature);
             nextDrawData.features[nextDrawData.features.length - 1] =
               nextFeature;
             setDrawData(nextDrawData);
           } else if (feature.geometry.type === "LineString") {
             // Replace the last coordinate with the current mouse position
-            console.debug("is hovering linestring");
+            // console.debug("is hovering linestring");
             nextFeature.geometry.coordinates[
               nextFeature.geometry.coordinates.length - 1
             ] = coordinate;
