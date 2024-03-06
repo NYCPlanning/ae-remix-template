@@ -23,6 +23,7 @@ const INITIAL_DRAW_DATA = {
       id: 0,
       properties: {
         dragging: false,
+        adding: false,
       },
       geometry: {
         coordinates: [
@@ -42,6 +43,7 @@ const INITIAL_DRAW_DATA = {
       id: 1,
       properties: {
         dragging: false,
+        adding: false,
       },
       geometry: {
         coordinates: [
@@ -53,7 +55,7 @@ const INITIAL_DRAW_DATA = {
     },
     {
       type: "Feature",
-      properties: { dragging: false },
+      properties: { dragging: false, adding: false },
       geometry: {
         coordinates: [-73.9686732004256, 40.76058644361714],
         type: "Point",
@@ -84,7 +86,7 @@ export function Atlas() {
     getPointRadius: () => 10,
     getLineWidth: () => 10,
     getFillColor: ({ properties }: any) => {
-      console.log("fill color properties", properties);
+      // console.log("fill color properties", properties);
       return properties?.dragging ? [120, 180, 180, 30] : [120, 180, 180, 90];
     },
     onDragStart: ({ object, coordinate }) => {
@@ -155,17 +157,17 @@ export function Atlas() {
         if (isHovering) return "pointer";
         return "grab";
       }}
-      onClick={({ object, coordinate }) => {
+      onClick={({ coordinate }) => {
         const nextDrawData = cloneDeep(drawData);
         if (!isAddingFeature) {
           setIsAddingFeature(true);
           if (coordinate) {
-            console.debug("coordinate", coordinate);
             const nextFeature = {
               type: "Feature",
               id: nextDrawData.features.length,
               properties: {
                 dragging: false,
+                adding: true,
               },
               geometry: {
                 type: "Point",
@@ -176,13 +178,50 @@ export function Atlas() {
             setDrawData(nextDrawData);
           }
         } else {
-          if (object !== undefined) setIsAddingFeature(false);
-
           const feature =
             nextDrawData.features[nextDrawData.features.length - 1];
           const nextFeature = cloneDeep(feature);
+          if (feature.geometry.type === "Point") {
+            nextFeature.properties.adding = false;
+            setIsAddingFeature(false);
+            return;
+          }
+
           if (coordinate && feature.geometry.type === "LineString") {
-            console.debug("feature", feature);
+            const lastCoordinate =
+              feature.geometry.coordinates[
+                feature.geometry.coordinates.length - 2
+              ];
+            const clickedAndLastCoordinateDistance = distance(
+              coordinate,
+              lastCoordinate,
+              { units: "yards" },
+            );
+            if (clickedAndLastCoordinateDistance < 10) {
+              setIsAddingFeature(false);
+              return;
+            }
+            const firstCoordinate = feature.geometry.coordinates[0];
+            const clickedAndFirstCoordinateDistance = distance(
+              coordinate,
+              firstCoordinate,
+              { units: "yards" },
+            );
+            if (clickedAndFirstCoordinateDistance < 10) {
+              const nextFeature = cloneDeep(feature);
+              nextFeature.geometry.type = "Polygon";
+              const nextCoordinates = cloneDeep(
+                nextFeature.geometry.coordinates,
+              );
+              nextCoordinates.push(firstCoordinate);
+              nextFeature.geometry.coordinates = [nextCoordinates];
+              nextDrawData.features[nextDrawData.features.length - 1] =
+                nextFeature;
+              setDrawData(nextDrawData);
+              setIsAddingFeature(false);
+              return;
+            }
+
             nextFeature.geometry.coordinates.push(coordinate);
             nextDrawData.features[nextDrawData.features.length - 1] =
               nextFeature;
@@ -196,6 +235,7 @@ export function Atlas() {
           const feature =
             nextDrawData.features[nextDrawData.features.length - 1];
           const nextFeature = cloneDeep(feature);
+          if (!feature.properties.adding) return;
           if (feature.geometry.type === "Point") {
             const nextGeometry = {
               type: "LineString",
