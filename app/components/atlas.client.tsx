@@ -51,6 +51,14 @@ const INITIAL_DRAW_DATA = {
         type: "LineString",
       },
     },
+    {
+      type: "Feature",
+      properties: { dragging: false },
+      geometry: {
+        coordinates: [-73.9686732004256, 40.76058644361714],
+        type: "Point",
+      },
+    },
   ],
 };
 
@@ -58,7 +66,7 @@ export type Geo = {
   type: string;
   id: number;
   properties: { dragging: boolean };
-  geometry: { coordinates: number[][][]; type: string };
+  geometry: { coordinates: any; type: string };
 };
 
 export function Atlas() {
@@ -66,12 +74,16 @@ export function Atlas() {
   const [startDragCoordinate, setStartDragCoordinate] =
     useState<null | Array<number>>(null);
   const [startDragFeature, setStartDragFeature] = useState<null | Geo>(null);
-  const [drawData, setDrawData] = useState(INITIAL_DRAW_DATA);
+  const [drawData, setDrawData] = useState<any>(INITIAL_DRAW_DATA);
+  const [isAddingFeature, setIsAddingFeature] = useState(false);
 
   const drawLayer = new GeoJsonLayer({
     data: drawData,
     pickable: true,
-    getFillColor: ({ properties }) => {
+    getPointColor: () => [100, 80, 255],
+    getPointRadius: () => 10,
+    getFillColor: ({ properties }: any) => {
+      console.log("fill color properties", properties);
       return properties?.dragging ? [120, 180, 180, 30] : [120, 180, 180, 90];
     },
     onDragStart: ({ object, coordinate }) => {
@@ -141,6 +153,59 @@ export function Atlas() {
         if (isDragging) return "grabbing";
         if (isHovering) return "pointer";
         return "grab";
+      }}
+      onClick={({ coordinate }) => {
+        console.debug("clicked and is adding Feature", isAddingFeature);
+        const nextDrawData = cloneDeep(drawData);
+        if (!isAddingFeature) {
+          setIsAddingFeature(true);
+          if (coordinate) {
+            const nextFeature = {
+              type: "Feature",
+              id: nextDrawData.features.length,
+              properties: {
+                dragging: false,
+              },
+              geometry: {
+                type: "Point",
+                coordinates: coordinate,
+              },
+            };
+            nextDrawData.features.push(nextFeature);
+            setDrawData(nextDrawData);
+          }
+        } else {
+          setIsAddingFeature(false);
+        }
+      }}
+      onHover={({ coordinate }) => {
+        if (isAddingFeature) {
+          const nextDrawData = cloneDeep(drawData);
+          const feature =
+            nextDrawData.features[nextDrawData.features.length - 1];
+          const nextFeature = cloneDeep(feature);
+          if (feature.geometry.type === "Point") {
+            const nextGeometry = {
+              type: "LineString",
+              coordinates: [feature.geometry.coordinates, coordinate],
+            };
+            nextFeature.geometry = nextGeometry;
+            console.debug("feature", feature);
+            console.debug("next feature", nextFeature);
+            nextDrawData.features[nextDrawData.features.length - 1] =
+              nextFeature;
+            setDrawData(nextDrawData);
+          } else if (feature.geometry.type === "LineString") {
+            // Replace the last coordinate with the current mouse position
+            console.debug("is hovering linestring");
+            nextFeature.geometry.coordinates[
+              nextFeature.geometry.coordinates.length - 1
+            ] = coordinate;
+            nextDrawData.features[nextDrawData.features.length - 1] =
+              nextFeature;
+            setDrawData(nextDrawData);
+          }
+        }
       }}
     >
       <Map
