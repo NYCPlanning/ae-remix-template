@@ -1,4 +1,5 @@
 import { Box, Button } from "@nycplanning/streetscape";
+import { Link } from "@remix-run/react";
 
 export function Header() {
   return (
@@ -11,7 +12,7 @@ export function Header() {
       zIndex={2}
     >
       <Button variant="secondary" size="sm">
-        Hello world!
+        <Link to="tax-lots">Tax Lots</Link>
       </Button>
     </Box>
   );

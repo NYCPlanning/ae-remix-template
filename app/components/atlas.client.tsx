@@ -7,6 +7,7 @@ import cloneDeep from "lodash.clonedeep";
 import distance from "@turf/distance";
 import bearing from "@turf/bearing";
 import destination from "@turf/destination";
+import { useNavigate } from "@remix-run/react";
 
 const INITIAL_VIEW_STATE = {
   longitude: -74.0008,
@@ -53,6 +54,7 @@ export type Geo = {
 };
 
 export function Atlas() {
+  const navigate = useNavigate();
   const [isDragging, setIsDragging] = useState(false);
   const [startDragCoordinate, setStartDragCoordinate] =
     useState<null | Array<number>>(null);
@@ -123,6 +125,22 @@ export function Atlas() {
         setDrawData(nextDrawData);
         setIsDragging(false);
       }
+    },
+    onClick: ({ object }) => {
+      // console.debug("data", object);
+      const {
+        geometry: { type, coordinates },
+      } = object as {
+        geometry: { type: "Polygon"; coordinates: Array<Array<Array<number>>> };
+      };
+      // console.debug("type", type);
+      // console.debug("coordinates", coordinates);
+      const lons = coordinates[0].map((position) => position[0]).join();
+      const lats = coordinates[0].map((position) => position[1]).join();
+      const path = `tax-lots?geometry=${type}&lats=${lats}&lons=${lons}`;
+      // console.warn("path", path);
+      navigate(path);
+      return true;
     },
     updateTriggers: {
       getFillColor: drawData,
@@ -222,7 +240,7 @@ export function Atlas() {
               return;
             }
             if (feature.geometry.coordinates.length >= 2) {
-              console.debug("we have at least three coordinates");
+              // console.debug("we have at least three coordinates");
               const firstCoordinate = feature.geometry.coordinates[0];
               const clickedAndFirstCoordinateDistance = distance(
                 coordinate,
@@ -230,7 +248,7 @@ export function Atlas() {
                 { units: "yards" },
               );
               if (clickedAndFirstCoordinateDistance < 10) {
-                console.debug("we are closed in on the first point");
+                // console.debug("we are closed in on the first point");
                 const nextFeature = cloneDeep(feature);
                 const nextDrawData = cloneDeep(drawData);
                 nextFeature.geometry.type = "Polygon";
