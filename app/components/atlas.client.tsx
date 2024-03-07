@@ -2,12 +2,16 @@ import { DeckGL } from "@deck.gl/react/typed";
 import { GeoJsonLayer } from "@deck.gl/layers/typed";
 import { Map } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { useState } from "react";
+import { useReducer, useState } from "react";
 import cloneDeep from "lodash.clonedeep";
 import distance from "@turf/distance";
 import bearing from "@turf/bearing";
 import destination from "@turf/destination";
 import { useNavigate } from "@remix-run/react";
+import { atlasContext, initialAtlasState } from "../stores/atlas.context";
+import { atlasReducer } from "../stores/atlas.reducer";
+import { atlasActions } from "../stores/atlas.actions";
+import { EditModeBtn } from "./editModeBtn";
 
 const INITIAL_VIEW_STATE = {
   longitude: -74.0008,
@@ -54,6 +58,12 @@ export type Geo = {
 };
 
 export function Atlas() {
+  const [atlasState, atlasDispatch] = useReducer(
+    atlasReducer,
+    initialAtlasState,
+  );
+  const atlasActionsDispatch = atlasActions(atlasDispatch);
+
   const navigate = useNavigate();
   const [isDragging, setIsDragging] = useState(false);
   const [startDragCoordinate, setStartDragCoordinate] =
@@ -153,57 +163,27 @@ export function Atlas() {
   });
 
   return (
-    <DeckGL
-      initialViewState={INITIAL_VIEW_STATE}
-      controller={isDragging ? false : true}
-      style={{ height: "100vh", width: "100vw" }}
-      layers={[drawLayer, penLayer]}
-      getCursor={({ isDragging, isHovering }) => {
-        if (isDragging) return "grabbing";
-        if (isHovering) return "pointer";
-        return "grab";
-      }}
-      onClick={({ coordinate }) => {
-        const nextPenData = cloneDeep(penData);
-        if (!isAddingFeature) {
-          // When first starting to add a first, append a new feature to the geometry collection
-          setIsAddingFeature(true);
-          if (coordinate) {
-            const nextFeature = {
-              type: "Feature",
-              id: nextPenData.features.length,
-              properties: {
-                dragging: false,
-                adding: true,
-              },
-              geometry: {
-                type: "Point",
-                coordinates: coordinate,
-              },
-            };
-            nextPenData.features[0] = nextFeature;
-            setPenData(nextPenData);
-          }
-        } else {
-          // After a new feature is adding, start editing it by adding points
-          const feature = nextPenData.features[0];
-          if (coordinate && feature.geometry.type === "Point") {
-            const featureCoordinate = feature.geometry.coordinates;
-            const clickedAndFeatureCoordinateDistance = distance(
-              coordinate,
-              featureCoordinate,
-              { units: "yards" },
-            );
-
-            if (clickedAndFeatureCoordinateDistance < 10) {
-              const nextDrawData = cloneDeep(drawData);
-              setIsAddingFeature(false);
-              nextDrawData.features.push(penData.features[0]);
-              setDrawData(nextDrawData);
-              nextPenData.features = [];
-              setPenData(nextPenData);
-              return;
-            } else {
+    <atlasContext.Provider
+      value={{ state: atlasState, actionsDispatch: atlasActionsDispatch }}
+    >
+      <EditModeBtn />
+      <DeckGL
+        initialViewState={INITIAL_VIEW_STATE}
+        controller={isDragging ? false : true}
+        style={{ height: "100vh", width: "100vw" }}
+        layers={[drawLayer, penLayer]}
+        getCursor={({ isDragging, isHovering }) => {
+          if (isDragging) return "grabbing";
+          if (isHovering) return "pointer";
+          return "grab";
+        }}
+        onClick={({ coordinate }) => {
+          atlasActionsDispatch.updateGeneric("hello");
+          const nextPenData = cloneDeep(penData);
+          if (!isAddingFeature) {
+            // When first starting to add a first, append a new feature to the geometry collection
+            setIsAddingFeature(true);
+            if (coordinate) {
               const nextFeature = {
                 type: "Feature",
                 id: nextPenData.features.length,
@@ -212,109 +192,145 @@ export function Atlas() {
                   adding: true,
                 },
                 geometry: {
-                  type: "LineString",
-                  coordinates: [featureCoordinate, coordinate],
+                  type: "Point",
+                  coordinates: coordinate,
                 },
               };
               nextPenData.features[0] = nextFeature;
               setPenData(nextPenData);
             }
-          }
-          if (coordinate && feature.geometry.type === "LineString") {
-            const lastCoordinate =
-              feature.geometry.coordinates[
-                feature.geometry.coordinates.length - 1
-              ];
-            const clickedAndLastCoordinateDistance = distance(
-              coordinate,
-              lastCoordinate,
-              { units: "yards" },
-            );
-            if (clickedAndLastCoordinateDistance < 10) {
-              const nextDrawData = cloneDeep(drawData);
-              nextDrawData.features.push(penData.features[0]);
-              setDrawData(nextDrawData);
-              nextPenData.features = [];
-              setPenData(nextPenData);
-              setIsAddingFeature(false);
-              return;
-            }
-            if (feature.geometry.coordinates.length >= 2) {
-              // console.debug("we have at least three coordinates");
-              const firstCoordinate = feature.geometry.coordinates[0];
-              const clickedAndFirstCoordinateDistance = distance(
+          } else {
+            // After a new feature is adding, start editing it by adding points
+            const feature = nextPenData.features[0];
+            if (coordinate && feature.geometry.type === "Point") {
+              const featureCoordinate = feature.geometry.coordinates;
+              const clickedAndFeatureCoordinateDistance = distance(
                 coordinate,
-                firstCoordinate,
+                featureCoordinate,
                 { units: "yards" },
               );
-              if (clickedAndFirstCoordinateDistance < 10) {
-                // console.debug("we are closed in on the first point");
-                const nextFeature = cloneDeep(feature);
+
+              if (clickedAndFeatureCoordinateDistance < 10) {
                 const nextDrawData = cloneDeep(drawData);
-                nextFeature.geometry.type = "Polygon";
-                nextFeature.id = nextDrawData.features.length;
-                const nextCoordinates = cloneDeep(
-                  nextFeature.geometry.coordinates,
-                );
-                nextCoordinates.push(firstCoordinate);
-                nextFeature.geometry.coordinates = [nextCoordinates];
-                nextDrawData.features.push(nextFeature);
-                console.log("nextDrawData", nextDrawData);
+                setIsAddingFeature(false);
+                nextDrawData.features.push(penData.features[0]);
+                setDrawData(nextDrawData);
+                nextPenData.features = [];
+                setPenData(nextPenData);
+                return;
+              } else {
+                const nextFeature = {
+                  type: "Feature",
+                  id: nextPenData.features.length,
+                  properties: {
+                    dragging: false,
+                    adding: true,
+                  },
+                  geometry: {
+                    type: "LineString",
+                    coordinates: [featureCoordinate, coordinate],
+                  },
+                };
+                nextPenData.features[0] = nextFeature;
+                setPenData(nextPenData);
+              }
+            }
+            if (coordinate && feature.geometry.type === "LineString") {
+              const lastCoordinate =
+                feature.geometry.coordinates[
+                  feature.geometry.coordinates.length - 1
+                ];
+              const clickedAndLastCoordinateDistance = distance(
+                coordinate,
+                lastCoordinate,
+                { units: "yards" },
+              );
+              if (clickedAndLastCoordinateDistance < 10) {
+                const nextDrawData = cloneDeep(drawData);
+                nextDrawData.features.push(penData.features[0]);
                 setDrawData(nextDrawData);
                 nextPenData.features = [];
                 setPenData(nextPenData);
                 setIsAddingFeature(false);
                 return;
               }
+              if (feature.geometry.coordinates.length >= 2) {
+                // console.debug("we have at least three coordinates");
+                const firstCoordinate = feature.geometry.coordinates[0];
+                const clickedAndFirstCoordinateDistance = distance(
+                  coordinate,
+                  firstCoordinate,
+                  { units: "yards" },
+                );
+                if (clickedAndFirstCoordinateDistance < 10) {
+                  // console.debug("we are closed in on the first point");
+                  const nextFeature = cloneDeep(feature);
+                  const nextDrawData = cloneDeep(drawData);
+                  nextFeature.geometry.type = "Polygon";
+                  nextFeature.id = nextDrawData.features.length;
+                  const nextCoordinates = cloneDeep(
+                    nextFeature.geometry.coordinates,
+                  );
+                  nextCoordinates.push(firstCoordinate);
+                  nextFeature.geometry.coordinates = [nextCoordinates];
+                  nextDrawData.features.push(nextFeature);
+                  console.log("nextDrawData", nextDrawData);
+                  setDrawData(nextDrawData);
+                  nextPenData.features = [];
+                  setPenData(nextPenData);
+                  setIsAddingFeature(false);
+                  return;
+                }
+              }
+              const nextFeature = cloneDeep(feature);
+              nextFeature.geometry.coordinates.push(coordinate);
+              nextPenData.features[0] = nextFeature;
+              setPenData(nextPenData);
             }
-            const nextFeature = cloneDeep(feature);
-            nextFeature.geometry.coordinates.push(coordinate);
-            nextPenData.features[0] = nextFeature;
-            setPenData(nextPenData);
           }
-        }
-      }}
-      onHover={({ coordinate }) => {
-        if (isAddingFeature) {
-          // Check whether the pen exists on the pen layer
-          const nextPenData = cloneDeep(penData);
-          const addingFeatureGeometry = nextPenData.features[0].geometry;
-          const addingFeatureCoordinate =
-            addingFeatureGeometry.type === "Point"
-              ? addingFeatureGeometry.coordinates
-              : addingFeatureGeometry.coordinates[
-                  addingFeatureGeometry.coordinates.length - 1
-                ];
-          if (nextPenData.features.length < 1) return;
-          if (nextPenData.features.length < 2) {
-            const penFeature = {
-              type: "Feature",
-              id: 1,
-              properties: {},
-              geometry: {
-                type: "LineString",
-                coordinates: [addingFeatureCoordinate, coordinate],
-              },
-            };
-            nextPenData.features.push(penFeature);
-            setPenData(nextPenData);
-          } else {
-            const penFeature = nextPenData.features[1];
-            const nextPenFeature = cloneDeep(penFeature);
+        }}
+        onHover={({ coordinate }) => {
+          if (isAddingFeature) {
+            // Check whether the pen exists on the pen layer
+            const nextPenData = cloneDeep(penData);
+            const addingFeatureGeometry = nextPenData.features[0].geometry;
+            const addingFeatureCoordinate =
+              addingFeatureGeometry.type === "Point"
+                ? addingFeatureGeometry.coordinates
+                : addingFeatureGeometry.coordinates[
+                    addingFeatureGeometry.coordinates.length - 1
+                  ];
+            if (nextPenData.features.length < 1) return;
+            if (nextPenData.features.length < 2) {
+              const penFeature = {
+                type: "Feature",
+                id: 1,
+                properties: {},
+                geometry: {
+                  type: "LineString",
+                  coordinates: [addingFeatureCoordinate, coordinate],
+                },
+              };
+              nextPenData.features.push(penFeature);
+              setPenData(nextPenData);
+            } else {
+              const penFeature = nextPenData.features[1];
+              const nextPenFeature = cloneDeep(penFeature);
 
-            nextPenFeature.geometry.coordinates[0] = addingFeatureCoordinate;
-            nextPenFeature.geometry.coordinates[1] = coordinate;
-            // console.debug("next Pen Feature", nextPenFeature);
-            nextPenData.features[1] = nextPenFeature;
-            setPenData(nextPenData);
+              nextPenFeature.geometry.coordinates[0] = addingFeatureCoordinate;
+              nextPenFeature.geometry.coordinates[1] = coordinate;
+              // console.debug("next Pen Feature", nextPenFeature);
+              nextPenData.features[1] = nextPenFeature;
+              setPenData(nextPenData);
+            }
           }
-        }
-      }}
-    >
-      <Map
-        id="atlas"
-        mapStyle={"https://tiles.planninglabs.nyc/styles/positron/style.json"}
-      ></Map>
-    </DeckGL>
+        }}
+      >
+        <Map
+          id="atlas"
+          mapStyle={"https://tiles.planninglabs.nyc/styles/positron/style.json"}
+        ></Map>
+      </DeckGL>
+    </atlasContext.Provider>
   );
 }
