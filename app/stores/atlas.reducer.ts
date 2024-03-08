@@ -3,7 +3,7 @@ import { AtlasState } from "./atlas.context";
 import { produce } from "immer";
 import { point, lineString } from "@turf/helpers";
 import { getCoords } from "@turf/invariant";
-import { Feature, Geometry, LineString, Point, Position } from "geojson";
+import { Feature, LineString, Point, Position } from "geojson";
 
 export function atlasReducer(state: AtlasState, action: AtlasAction) {
   switch (action.type) {
