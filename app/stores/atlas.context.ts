@@ -1,22 +1,29 @@
-import { FeatureCollection } from "geojson";
 import { createContext } from "react";
-
-export type AtlasMode = "view" | "edit";
+import { AtlasActions } from "./atlas.actions";
+import { featureCollection } from "@turf/helpers";
+import { FeatureCollection } from "geojson";
+export type AtlasMode =
+  | "createPoint"
+  | "createLineString"
+  | "createPolygon"
+  | "select";
 
 export type AtlasState = {
   mode: AtlasMode;
-  shapeFeatures: FeatureCollection;
+  shapeFeatureCollection: FeatureCollection;
+  penFeatureCollection: FeatureCollection;
 };
 
 export const initialAtlasState: AtlasState = {
-  mode: "view",
-  shapeFeatures: {
-    type: "FeatureCollection",
-    features: [],
-  },
+  mode: "select",
+  shapeFeatureCollection: featureCollection([]) as FeatureCollection,
+  penFeatureCollection: featureCollection([]) as FeatureCollection,
 };
 
-export const atlasContext = createContext({
+export const atlasContext = createContext<{
+  state: AtlasState;
+  actionsDispatch: AtlasActions;
+}>({
   state: initialAtlasState,
   actionsDispatch: {} as any,
 });
