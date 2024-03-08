@@ -7,6 +7,7 @@ export function PointModeBtn() {
     state: { mode },
     actionsDispatch: { updateMode },
   } = useContext(atlasContext);
+
   return (
     <Button
       onClick={() => updateMode("createPoint")}

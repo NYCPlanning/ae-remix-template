@@ -2,14 +2,14 @@ import { AtlasAction, AtlasActionType } from "./atlas.actions";
 import { AtlasState } from "./atlas.context";
 import { produce } from "immer";
 import { point, lineString, multiPoint } from "@turf/helpers";
-import { getCoords } from "@turf/invariant";
-import { Feature, LineString, Point, Position, MultiPoint } from "geojson";
+import { Feature, LineString, Point, MultiPoint } from "geojson";
 import distance from "@turf/distance";
 
 export function atlasReducer(state: AtlasState, action: AtlasAction) {
   switch (action.type) {
     case AtlasActionType.UpdateMode: {
       return produce(state, (draft) => {
+        console.log("also clicking again");
         const nextMode = action.payload;
         const currentMode = state.mode;
         // Clear the pen when switching modes
@@ -111,6 +111,34 @@ export function atlasReducer(state: AtlasState, action: AtlasAction) {
           } else if (penShape.geometry.type === "LineString") {
             penShape.geometry.coordinates = penCoordinates;
           }
+        }
+      });
+    }
+    case AtlasActionType.EnterKeyDownOnWindow: {
+      return produce(state, (draft) => {
+        const currentMode = state.mode;
+        if (currentMode === "select") return;
+        if (currentMode === "createPoint") {
+          action.payload.preventDefault();
+          draft.penFeatureCollection.features = [];
+          draft.mode = "select";
+          return;
+        }
+        if (currentMode === "createLineString") {
+          action.payload.preventDefault();
+          const crudeShape = draft.penFeatureCollection.features[0];
+          if (crudeShape?.geometry.type === "MultiPoint") {
+            if (crudeShape.geometry.coordinates.length >= 2) {
+              const ls = lineString(crudeShape.geometry.coordinates) as Feature<
+                LineString,
+                null
+              >;
+              draft.shapeFeatureCollection.features.push(ls);
+            }
+          }
+          draft.penFeatureCollection.features = [];
+          draft.mode = "select";
+          return;
         }
       });
     }

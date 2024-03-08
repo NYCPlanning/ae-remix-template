@@ -13,6 +13,7 @@ import { atlasReducer } from "../stores/atlas.reducer";
 import { atlasActions } from "../stores/atlas.actions";
 import { PointModeBtn } from "./pointModeBtn";
 import { LinStringModeBtn } from "./lineStringModeBtn";
+import { KeyboardListener } from "./keyboardListener";
 
 const INITIAL_VIEW_STATE = {
   longitude: -74.0008,
@@ -71,8 +72,6 @@ export function Atlas() {
     useState<null | Array<number>>(null);
   const [startDragFeature, setStartDragFeature] = useState<null | Geo>(null);
   const [drawData, setDrawData] = useState<any>(INITIAL_DRAW_DATA);
-  const [penData, setPenData] = useState<any>(INITIAL_PEN_DATA);
-  const [isAddingFeature, setIsAddingFeature] = useState(false);
   const { shapeFeatureCollection, penFeatureCollection } = atlasState;
 
   const drawLayer = new GeoJsonLayer({
@@ -168,6 +167,7 @@ export function Atlas() {
     <atlasContext.Provider
       value={{ state: atlasState, actionsDispatch: atlasActionsDispatch }}
     >
+      <KeyboardListener />
       <PointModeBtn />
       <LinStringModeBtn />
       <DeckGL
