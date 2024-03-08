@@ -127,14 +127,15 @@ export function atlasReducer(state: AtlasState, action: AtlasAction) {
         if (currentMode === "createLineString") {
           action.payload.preventDefault();
           const crudeShape = draft.penFeatureCollection.features[0];
-          if (crudeShape?.geometry.type === "MultiPoint") {
-            if (crudeShape.geometry.coordinates.length >= 2) {
-              const ls = lineString(crudeShape.geometry.coordinates) as Feature<
-                LineString,
-                null
-              >;
-              draft.shapeFeatureCollection.features.push(ls);
-            }
+          if (
+            crudeShape?.geometry.type === "MultiPoint" &&
+            crudeShape.geometry.coordinates.length >= 2
+          ) {
+            const ls = lineString(crudeShape.geometry.coordinates) as Feature<
+              LineString,
+              null
+            >;
+            draft.shapeFeatureCollection.features.push(ls);
           }
           draft.penFeatureCollection.features = [];
           draft.mode = "select";
