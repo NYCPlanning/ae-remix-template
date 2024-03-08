@@ -14,6 +14,7 @@
     "kubb:generate": "kubb generate"
   },
   "dependencies": {
+    "@deck.gl/geo-layers": "^8.9.35",
     "@deck.gl/layers": "^8.9.35",
     "@deck.gl/react": "^8.9.35",
     "@emotion/react": "^11.11.3",

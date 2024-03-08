@@ -1,5 +1,6 @@
 import { DeckGL } from "@deck.gl/react/typed";
 import { GeoJsonLayer } from "@deck.gl/layers/typed";
+import { Tile3DLayer } from "@deck.gl/geo-layers/typed";
 import { Map } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useState } from "react";
@@ -46,6 +47,9 @@ const INITIAL_PEN_DATA = {
   features: [],
 };
 
+const GOOGLE_3D_TILES = "https://tile.googleapis.com/v1/3dtiles/root.json";
+const GOOGLE_API_KEY = "";
+
 export type Geo = {
   type: string;
   id: number;
@@ -62,6 +66,19 @@ export function Atlas() {
   const [drawData, setDrawData] = useState<any>(INITIAL_DRAW_DATA);
   const [penData, setPenData] = useState<any>(INITIAL_PEN_DATA);
   const [isAddingFeature, setIsAddingFeature] = useState(false);
+
+  const tile3dLayer = new Tile3DLayer({
+    id: "google-3d-tiles",
+    data: GOOGLE_3D_TILES,
+    visible: true,
+    loadOptions: {
+      fetch: {
+        headers: {
+          "X-GOOG-API-KEY": GOOGLE_API_KEY,
+        },
+      },
+    },
+  });
 
   const drawLayer = new GeoJsonLayer({
     data: drawData,
@@ -157,7 +174,7 @@ export function Atlas() {
       initialViewState={INITIAL_VIEW_STATE}
       controller={isDragging ? false : true}
       style={{ height: "100vh", width: "100vw" }}
-      layers={[drawLayer, penLayer]}
+      layers={[drawLayer, penLayer, tile3dLayer]}
       getCursor={({ isDragging, isHovering }) => {
         if (isDragging) return "grabbing";
         if (isHovering) return "pointer";
@@ -311,10 +328,10 @@ export function Atlas() {
         }
       }}
     >
-      <Map
+      {/*<Map
         id="atlas"
         mapStyle={"https://tiles.planninglabs.nyc/styles/positron/style.json"}
-      ></Map>
+    ></Map> */}
     </DeckGL>
   );
 }
