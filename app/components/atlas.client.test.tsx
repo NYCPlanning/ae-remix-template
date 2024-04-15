@@ -1,5 +1,5 @@
 import { render } from "@testing-library/react";
-import { Atlas } from "./atlas";
+import { Atlas } from "./atlas.client";
 
 describe("Atlas", () => {
   it("should render", () => {
