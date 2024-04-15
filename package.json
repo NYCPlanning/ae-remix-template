@@ -15,7 +15,7 @@
     "kubb:generate": "kubb generate"
   },
   "dependencies": {
-    "@deck.gl/react": "^8.9.35",
+    "@deck.gl/react": "^9.0.8",
     "@emotion/react": "^11.11.3",
     "@emotion/server": "^11.11.0",
     "@emotion/styled": "^11.11.0",
