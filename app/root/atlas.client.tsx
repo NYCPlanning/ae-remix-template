@@ -13,6 +13,7 @@ import { useTaxLotLayer } from "../layers/tax-lot.client";
 import { usePenLayer } from "../layers/pen.client";
 import { useDrawLayer } from "../layers/draw.client";
 import { useBufferLayer } from "../layers/buffer.client";
+import { DrawController } from "./drawController.client";
 
 const INITIAL_VIEW_STATE = {
   longitude: -74.0008,
@@ -46,8 +47,7 @@ export function Atlas() {
     >
       <Outlet />
       <KeyboardListener />
-      <PointModeBtn />
-      <LinStringModeBtn />
+      <DrawController />
       <DeckGL
         initialViewState={INITIAL_VIEW_STATE}
         controller={true}

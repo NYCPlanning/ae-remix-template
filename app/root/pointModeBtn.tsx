@@ -11,10 +11,6 @@ export function PointModeBtn() {
   return (
     <Button
       onClick={() => updateMode("createPoint")}
-      position="absolute"
-      top="10px"
-      right="100px"
-      zIndex="2"
       variant={mode === "createPoint" ? "primary" : "secondary"}
       size="sm"
     >

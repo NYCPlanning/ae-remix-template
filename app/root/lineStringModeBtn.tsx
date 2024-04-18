@@ -10,10 +10,6 @@ export function LinStringModeBtn() {
   return (
     <Button
       onClick={() => updateMode("createLineString")}
-      position="absolute"
-      top="10px"
-      right="250px"
-      zIndex="2"
       variant={mode === "createLineString" ? "primary" : "secondary"}
       size="sm"
     >

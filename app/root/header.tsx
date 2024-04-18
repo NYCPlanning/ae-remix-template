@@ -1,4 +1,4 @@
-import { Box, Button } from "@nycplanning/streetscape";
+import { Box, Button, Heading } from "@nycplanning/streetscape";
 import { Link } from "@remix-run/react";
 
 export function Header() {
@@ -11,9 +11,10 @@ export function Header() {
       position="absolute"
       zIndex={2}
     >
-      <Button variant="secondary" size="sm">
-        <Link to="tax-lots">Tax Lots</Link>
-      </Button>
+      <Link to="/">
+        <Heading as="h1">NYC Dept of City Planning</Heading>
+        <Heading as="h2">Built Environment Explorer</Heading>
+      </Link>
     </Box>
   );
 }
