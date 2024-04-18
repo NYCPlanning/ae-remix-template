@@ -9,7 +9,7 @@ import createSwaggerMsw from "@kubb/swagger-msw";
 export default defineConfig({
   root: ".",
   input: {
-    path: "",
+    path: "https://raw.githubusercontent.com/NYCPlanning/ae-zoning-api/177/tax-lot-spatial-filter/openapi/openapi.yaml",
   },
   output: {
     path: "./app/gen",
